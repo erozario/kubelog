@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kubelog
+  namespace: kube-system
+spec:
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: kubelog
+  template:
+    metadata:
+      labels:
+        app: kubelog
+    spec:
+      serviceAccountName: kubelog
+      dnsPolicy: ClusterFirst
+      containers:
+      - name: agent
+        image: eduardoagrj/kubelog:1.0
+        env:
+        - name: GELF_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: kubelog
+              key: GELF_HOST
+        - name: GELF_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: kubelog
+              key: GELF_PORT
+        - name: GELF_PROTOCOL
+          valueFrom:
+            configMapKeyRef:
+              name: kubelog
+              key: GELF_PROTOCOL
+        - name: NODENAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+          readOnly: true
+        - name: gelf-pos
+          mountPath: /pos
+          readOnly: false
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+        - name: kubelog-config
+          mountPath: /fluentd/etc/fluent.conf
+          subPath: fluent.conf
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: kubelog-config
+        configMap:
+          name: kubelog
+          items:
+          - key: fluent.conf
+            path: fluent.conf
+      - name: gelf-pos
+        hostPath:
+          path: /var/log/pos
