@@ -11,15 +11,23 @@ Configurable through [ConfigMap](https://kubernetes.io/docs/tasks/configure-pod-
 
 ## Installation
 
-Clone this repository and edit fluent.conf according to your need and build a docker image.
+1. Clone this repository and build a docker image:
 
 ```sh
 docker build -t <registry>/<image-name>:<version> .
 ```
 
-Modify the docker image on file daemonset.yaml for your docker image generated in previously step.
+2. Modify the docker image on file daemonset.yaml for your docker image generated in previously step.
 
-Afther that execute:
+        spec:
+            serviceAccountName: kubelog
+            dnsPolicy: ClusterFirst
+            containers:
+            - name: agent
+                image:<registry>/<image-name>:<version>
+
+3. Edit fluent.conf according to your need
+4. Execute:
  
 ```sh
 kubectl create -f rbac.yaml
